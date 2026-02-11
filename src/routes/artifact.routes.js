@@ -3,6 +3,7 @@ import { getArtifacts, createArtifact, likeArtifact, commentArtifact } from "../
 import { authenticate } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
+console.log("Loading Artifact Routes...");
 
 // The user specified /api/artifacts as base.
 

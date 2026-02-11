@@ -1,4 +1,5 @@
 import User from "../models/user.model.js";
+import OTP from "../models/otp.model.js";
 import { sendEmail } from "../utils/email.util.js";
 import { successResponse, errorResponse } from "../utils/response.util.js";
 import jwt from "jsonwebtoken";
@@ -18,16 +19,16 @@ export const sendOTP = async (req, res) => {
     try {
         const { email } = req.body;
         const otp = generateOTPCode();
-        const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
+        // Ensure user exists (create Guest if not)
         let user = await User.findOne({ email });
         if (!user) {
-            user = await User.create({ name: "Guest", email, otp, otpExpires });
-        } else {
-            user.otp = otp;
-            user.otpExpires = otpExpires;
-            await user.save();
+            await User.create({ name: "Guest", email });
         }
+
+        // Save OTP to secure collection
+        await OTP.create({ email, otp, expiresAt });
 
         await sendEmail(email, "Your OTP", `Your OTP is ${otp}`);
         successResponse(res, null, "OTP sent");
@@ -39,16 +40,29 @@ export const sendOTP = async (req, res) => {
 export const verifyOTP = async (req, res) => {
     try {
         const { email, otp } = req.body;
-        const user = await User.findOne({ email });
 
-        if (!user || user.otp !== otp || user.otpExpires < Date.now()) {
+        // Find the latest OTP for this email
+        const otpDoc = await OTP.findOne({ email }).sort({ createdAt: -1 });
+
+        if (!otpDoc) {
             return errorResponse(res, { message: "Invalid or expired OTP" }, 400);
         }
 
-        user.isVerified = true;
-        user.otp = undefined;
-        user.otpExpires = undefined;
-        await user.save();
+        // Verify hash
+        const isValid = await bcrypt.compare(otp, otpDoc.otp);
+        if (!isValid) {
+            return errorResponse(res, { message: "Invalid OTP" }, 400);
+        }
+
+        // Verify User
+        const user = await User.findOne({ email });
+        if (user) {
+            user.isVerified = true;
+            await user.save();
+        }
+
+        // Delete used OTP
+        await OTP.deleteOne({ _id: otpDoc._id });
 
         successResponse(res, null, "Email verified");
     } catch (error) {
