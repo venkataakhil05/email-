@@ -5,10 +5,17 @@ import { authenticate } from "../middlewares/auth.middleware.js";
 const router = express.Router();
 
 // The user specified /api/artifacts as base.
-// GET /api/artifacts and POST /api/artifacts
-router.get("/", authenticate, getArtifacts);
-router.post("/", authenticate, createArtifact);
-router.put("/:id/like", authenticate, likeArtifact);
-router.post("/:id/comment", authenticate, commentArtifact);
+
+// Create & Get
+router.post("/create", authenticate, createArtifact);
+router.get("/get", authenticate, getArtifacts);
+
+// Like (POST & GET as requested)
+router.post("/like/:id", authenticate, likeArtifact);
+router.get("/like/:id", authenticate, likeArtifact);
+
+// Comment (POST & GET as requested)
+router.post("/comment/:id", authenticate, commentArtifact);
+router.get("/comment/:id", authenticate, commentArtifact);
 
 export default router;
