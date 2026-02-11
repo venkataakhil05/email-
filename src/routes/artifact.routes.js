@@ -1,5 +1,5 @@
 import express from "express";
-import { getArtifacts, createArtifact } from "../controllers/artifact.controller.js";
+import { getArtifacts, createArtifact, likeArtifact, commentArtifact } from "../controllers/artifact.controller.js";
 import { authenticate } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
@@ -8,5 +8,7 @@ const router = express.Router();
 // GET /api/artifacts and POST /api/artifacts
 router.get("/", authenticate, getArtifacts);
 router.post("/", authenticate, createArtifact);
+router.put("/:id/like", authenticate, likeArtifact);
+router.post("/:id/comment", authenticate, commentArtifact);
 
 export default router;
